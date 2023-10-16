@@ -78,3 +78,40 @@ func (n *node) add(sum [32]byte, replace bool) (digest [32]byte) {
 
 	return n.next.add(combined, replace)
 }
+
+func (b *Bmt) Proof(i int) [][32]byte {
+	return b.node.proof(i, nil)
+}
+
+func (n *node) proof(i int, acc [][32]byte) [][32]byte {
+	var pfi int
+
+	if i == 0 {
+		pfi = 1
+	} else if i == 1 {
+		pfi = 0
+	} else if i%2 == 0 {
+		pfi = i - 1
+	} else {
+		pfi = i + 1
+	}
+
+	acc = append(acc, n.sums[pfi])
+
+	if n.isLast() {
+		return acc
+	}
+
+	isLeft := pfi > i
+	if isLeft {
+		i++
+	}
+
+	i /= 2
+
+	return n.next.proof(i, acc)
+}
+
+func (n *node) isLast() bool {
+	return n.next != nil && n.next.next == nil
+}
