@@ -17,6 +17,7 @@ func main() {
 	}
 
 	e.POST("/:collection", app.upload)
+	e.GET("/contents/:collection/:index", app.download)
 	e.GET("/proof/:collection/:index", app.proof)
 
 	e.Logger.Fatal(e.Start(":8080"))

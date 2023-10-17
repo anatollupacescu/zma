@@ -38,6 +38,14 @@ func (b *Bmt) initAdd(in [32]byte) [32]byte {
 	return in
 }
 
+func (b *Bmt) Len() int {
+	if b.node.next == nil {
+		return 0
+	}
+
+	return len(b.node.sums)
+}
+
 func (b *Bmt) Add(file []byte) [32]byte {
 	sum := sha3.Sum256(file)
 	b.root = b.addF(sum)

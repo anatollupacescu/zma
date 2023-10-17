@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/anatollupacescu/zma/bmt"
@@ -51,11 +52,7 @@ func (a *app) proof(c echo.Context) error {
 }
 
 func (a *app) upload(c echo.Context) error {
-	name := c.Param("collection")
-	c.Logger().Debug(name)
-
 	req := c.Request()
-
 	defer req.Body.Close()
 
 	data, err := io.ReadAll(req.Body)
@@ -63,6 +60,7 @@ func (a *app) upload(c echo.Context) error {
 		return fmt.Errorf("read body: %w", err)
 	}
 
+	name := c.Param("collection")
 	cbmt, found := a.collections[name]
 	if !found {
 		cbmt = bmt.New()
@@ -71,5 +69,22 @@ func (a *app) upload(c echo.Context) error {
 
 	root := cbmt.Add(data)
 
+	err = os.WriteFile(fmt.Sprintf("%s-%d", name, cbmt.Len()-1), data, 0644)
+	if err != nil {
+		return fmt.Errorf("write file to disk: %w", err)
+	}
+
 	return c.String(http.StatusOK, hex.EncodeToString(root[:]))
+}
+
+func (a *app) download(c echo.Context) error {
+	name := c.Param("collection")
+	index := c.Param("index")
+	i, err := strconv.Atoi(index)
+	if err != nil {
+		errMsg := fmt.Sprintf("invalid integer: '%s'", index)
+		return echo.NewHTTPError(http.StatusBadRequest, errMsg)
+	}
+	filename := fmt.Sprintf("%s-%d", name, i)
+	return c.File(filename)
 }
