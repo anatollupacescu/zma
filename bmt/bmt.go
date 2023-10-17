@@ -79,37 +79,50 @@ func (n *node) add(sum [32]byte, replace bool) (digest [32]byte) {
 	return n.next.add(combined, replace)
 }
 
-func (b *Bmt) Proof(i int) [][32]byte {
+type Proof struct {
+	Left bool
+	Sum  [32]byte
+}
+
+func (b *Bmt) Proof(i int) []Proof {
 	return b.node.proof(i, nil)
 }
 
-func (n *node) proof(i int, acc [][32]byte) [][32]byte {
-	var pfi int
+func (n *node) proof(index int, acc []Proof) []Proof {
+	var (
+		proofIndex int
+		left       bool
+	)
 
-	if i == 0 {
-		pfi = 1
-	} else if i == 1 {
-		pfi = 0
-	} else if i%2 == 0 {
-		pfi = i - 1
+	if index == 0 {
+		proofIndex = 1
+		left = true
+	} else if index == 1 {
+		proofIndex = 0
+	} else if index%2 == 0 {
+		proofIndex = index - 1
 	} else {
-		pfi = i + 1
+		proofIndex = index + 1
+		left = true
 	}
 
-	acc = append(acc, n.sums[pfi])
+	acc = append(acc, Proof{
+		Sum:  n.sums[proofIndex],
+		Left: left,
+	})
 
 	if n.isLast() {
 		return acc
 	}
 
-	isLeft := pfi > i
-	if isLeft {
-		i++
+	// isLeft := proofIndex > index
+	if left {
+		index++
 	}
 
-	i /= 2
+	index /= 2
 
-	return n.next.proof(i, acc)
+	return n.next.proof(index, acc)
 }
 
 func (n *node) isLast() bool {
