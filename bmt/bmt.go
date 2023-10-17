@@ -1,6 +1,8 @@
 package bmt
 
-import "golang.org/x/crypto/sha3"
+import (
+	"golang.org/x/crypto/sha3"
+)
 
 type Bmt struct {
 	root [32]byte
@@ -100,22 +102,28 @@ func (n *node) proof(index int, acc []Proof) []Proof {
 	} else if index == 1 {
 		proofIndex = 0
 	} else if index%2 == 0 {
-		proofIndex = index - 1
-	} else {
 		proofIndex = index + 1
 		left = true
+	} else {
+		proofIndex = index - 1
 	}
 
-	acc = append(acc, Proof{
-		Sum:  n.sums[proofIndex],
-		Left: left,
-	})
+	if proofIndex < len(n.sums) {
+		acc = append(acc, Proof{
+			Sum:  n.sums[proofIndex],
+			Left: left,
+		})
+	} else {
+		acc = append(acc, Proof{
+			Sum:  zero,
+			Left: left,
+		})
+	}
 
 	if n.isLast() {
 		return acc
 	}
 
-	// isLeft := proofIndex > index
 	if left {
 		index++
 	}
