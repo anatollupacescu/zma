@@ -6,7 +6,14 @@
 go run $(pwd)/cmd/server
 ```
 
-2. Upload image files:
+Alternatively, in docker:
+
+```sh
+docker build . -t zma
+docker run -p 8080:8080 zma
+```
+
+2. Upload image files to an arbitrary collection (cats):
 
 ```sh
 for f in $(ls image/*)
@@ -19,10 +26,10 @@ done
 3. Store the last printed checksum in your env (it always prints the bmt root sum):
 
 ```sh
-YOUR_ROOT_HASH=c1ea98387203ae52b4f70d9ee1b9ac0b02c9da5247ea293d8786c7234bf53b20
+YOUR_ROOT_HASH=14e08396215c156ff4998eca119fc15173d544bc74fad48332b2012bcb226774
 ```
 
-At this point you can remove your local images.
+At this point it is safe to remove your local images.
 
 You can download again the server stored file using:
 
@@ -38,7 +45,7 @@ Now you can proceed to verify file contents integrity:
 curl -XGET -s localhost:8080/proof/cats/2 > proof.json
 ```
 
-2. Validate file integrity aginst your locally stored root checksum and downloaded contents:
+2. Validate file integrity aginst your root checksum and downloaded contents:
 
 ```sh
 go run $(pwd)/cmd/checker -root $YOUR_ROOT_HASH -proofs $(<proof.json) my.cat
