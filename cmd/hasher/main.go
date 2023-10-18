@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/anatollupacescu/zma/bmt"
+	kbmt "github.com/anatollupacescu/zma/keccak256bmt"
 )
 
 func main() {
@@ -28,8 +28,8 @@ func main() {
 		log.Fatalf("read dir %s: %v", dir, err)
 	}
 
-	cbmt := bmt.New()
-	var rootSum [32]byte
+	cbmt := kbmt.NewKeccak256Bmt()
+	var rootSum []byte
 
 	for _, file := range files {
 		fileLoc := filepath.Join(dir, file.Name())
@@ -45,8 +45,9 @@ func main() {
 			return
 		}
 
-		rootSum = cbmt.Add(buf)
+		bufHash := kbmt.Sum(buf)
+		rootSum = cbmt.Add(bufHash)
 	}
 
-	fmt.Println(hex.EncodeToString(rootSum[:]))
+	fmt.Println(hex.EncodeToString(rootSum))
 }

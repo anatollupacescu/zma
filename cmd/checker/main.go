@@ -8,8 +8,13 @@ import (
 	"log"
 	"os"
 
-	"golang.org/x/crypto/sha3"
+	kbmt "github.com/anatollupacescu/zma/keccak256bmt"
 )
+
+type proof struct {
+	Left bool   `json:"left"`
+	Sum  string `json:"sum"`
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -45,7 +50,7 @@ func main() {
 		log.Fatal("read file", err)
 	}
 
-	contentHashSum := sha3.Sum256(content)
+	contentHashSum := kbmt.Sum(content)
 
 	var sumToMatch = contentHashSum
 
@@ -56,20 +61,15 @@ func main() {
 		}
 
 		if proof.Left {
-			sumToMatch = sha3.Sum256(append(sumToMatch[:], proofSum...))
+			sumToMatch = kbmt.Comb(sumToMatch, proofSum)
 			continue
 		}
-		sumToMatch = sha3.Sum256(append(proofSum, sumToMatch[:]...))
+		sumToMatch = kbmt.Comb(proofSum, sumToMatch)
 	}
 
-	if !bytes.Equal(sumToMatch[:], root) {
+	if !bytes.Equal(sumToMatch, root) {
 		log.Fatal("hash sums do NOT match")
 	}
 
 	log.Println("hash sums match")
-}
-
-type proof struct {
-	Left bool   `json:"left"`
-	Sum  string `json:"sum"`
 }

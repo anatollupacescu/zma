@@ -1,15 +1,20 @@
 package bmt
 
 import (
-	"bytes"
 	"testing"
 )
 
+func NewTestBmt() *Bmt[string] {
+	return New[string](func(l, r string) string {
+		return l + r
+	})
+}
+
 func TestProof(t *testing.T) {
 	t.Run("two files, proof len is 1", func(t *testing.T) {
-		bmt := New()
-		_ = bmt.Add([]byte("1test"))
-		_ = bmt.Add([]byte("2test"))
+		bmt := NewTestBmt()
+		_ = bmt.Add("1test")
+		_ = bmt.Add("2test")
 
 		proofs := bmt.Proof(0)
 		if len(proofs) != 1 {
@@ -17,64 +22,89 @@ func TestProof(t *testing.T) {
 		}
 	})
 
-	t.Run("three files, proof len is 2", func(t *testing.T) {
-		bmt := New()
-		_ = bmt.Add([]byte("1test"))
-		_ = bmt.Add([]byte("2test"))
-		_ = bmt.Add([]byte("3test"))
+	t.Run("three files, proofs contain zero hash", func(t *testing.T) {
+		bmt := NewTestBmt()
+		_ = bmt.Add("a")
+		_ = bmt.Add("b")
+		_ = bmt.Add("c")
 
-		proofs := bmt.Proof(1)
+		proofs := bmt.Proof(2)
 		if len(proofs) != 2 {
 			t.Fatal("expected one proof")
+		}
+
+		if proofs[0].Sum != "" {
+			t.Fatal("expected zero hash")
 		}
 	})
 
 	t.Run("four files, proof len is 2", func(t *testing.T) {
-		bmt := New()
-		_ = bmt.Add([]byte("1test"))
-		_ = bmt.Add([]byte("2test"))
-		_ = bmt.Add([]byte("3test"))
-		_ = bmt.Add([]byte("4test"))
+		bmt := NewTestBmt()
+		_ = bmt.Add("a")
+		_ = bmt.Add("b")
+		_ = bmt.Add("c")
+		_ = bmt.Add("d")
 
-		proofs := bmt.Proof(1)
+		proofs := bmt.Proof(0)
 		if len(proofs) != 2 {
 			t.Fatal("expected one proof")
+		}
+
+		if proofs[0].Sum != "b" {
+			t.Fatal("expected b")
+		}
+
+		if proofs[1].Sum != "cd" {
+			t.Fatal("expected cd")
 		}
 	})
 }
 
 func TestAdd(t *testing.T) {
 	t.Run("singe file hash is root hash", func(t *testing.T) {
-		bmt := New()
-		buf := []byte("test test")
-		got := bmt.Add(buf)
-
+		bmt := NewTestBmt()
+		got := bmt.Add("test test")
 		want := bmt.RootSum()
 
-		if !bytes.Equal(got[:], want[:]) {
-			t.Fatal("hash sums not equal")
+		if got != want {
+			t.Fatalf("got %s, want %s", got, want)
 		}
 	})
 
 	t.Run("two file hashes geneate a new root", func(t *testing.T) {
-		bmt := New()
-		buf := []byte("test test")
+		bmt := NewTestBmt()
+		original := bmt.Add("test test")
+		_ = bmt.Add("test test")
 
-		original := bmt.Add(buf)
-		_ = bmt.Add(buf)
+		sum := bmt.RootSum()
 
-		want := bmt.RootSum()
-
-		if bytes.Equal(original[:], want[:]) {
+		if original == sum {
 			t.Fatal("hash sums should not be equal")
 		}
 
-		if len(bmt.node.sums) != 2 {
+		if len(bmt.sums) != 2 {
 			t.Fatal("want two base hashes")
 		}
 
-		if len(bmt.node.next.sums) != 1 {
+		if len(bmt.next.sums) != 1 {
 			t.Fatal("want one root hash")
+		}
+	})
+
+	t.Run("four files combine hash correctly", func(t *testing.T) {
+		bmt := NewTestBmt()
+		_ = bmt.Add("a")
+		_ = bmt.Add("b")
+		_ = bmt.Add("c")
+		_ = bmt.Add("d")
+
+		p0, p1 := bmt.next.sums[0], bmt.next.sums[1]
+		if p0 != "ab" || p1 != "cd" {
+			t.Fatalf("wrong combinations: %s", bmt.next.sums)
+		}
+
+		if bmt.next.next.sums[0] != "abcd" {
+			t.Fatalf("wrong root hash: %s", bmt.next.next.sums[0])
 		}
 	})
 }

@@ -27,7 +27,7 @@ At this point you can remove your local images.
 You can download again the server stored file using:
 
 ```sh
-wget localhost:8080/contents/cats/2 -O my.cat
+wget localhost:8080/cats/2 -O my.cat
 ```
 
 Now you can proceed to verify file contents integrity:

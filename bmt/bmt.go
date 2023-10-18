@@ -1,104 +1,81 @@
 package bmt
 
-import (
-	"golang.org/x/crypto/sha3"
-)
-
-type Bmt struct {
-	root [32]byte
-	node *node
-
-	addF func([32]byte) [32]byte
+// Bmt using generics allows for different sum types (like string or stdlib's sha3 [32]byte etc.)
+type Bmt[T any] struct {
+	sums []T
+	next *Bmt[T]
+	comb func(l, r T) T
 }
 
-type node struct {
-	sums [][32]byte
-	next *node
-}
-
-func New() *Bmt {
-	b := &Bmt{
-		node: new(node),
+func New[T any](combF func(l, r T) T) *Bmt[T] {
+	return &Bmt[T]{
+		comb: combF,
 	}
-	b.addF = b.initAdd
-	return b
 }
 
-func (b *Bmt) RootSum() [32]byte {
-	return b.root
-}
-
-func (b *Bmt) initAdd(in [32]byte) [32]byte {
-	b.node.sums = append(b.node.sums, in)
-	b.node.next = new(node)
-	b.node.next.sums = append(b.node.next.sums, in)
-	b.addF = func(sum [32]byte) [32]byte {
-		return b.node.add(sum, false)
+func (b *Bmt[T]) RootSum() T {
+	for {
+		if b.next == nil {
+			return b.sums[0]
+		}
+		b = b.next
 	}
-	return in
 }
 
-func (b *Bmt) Len() int {
-	if b.node.next == nil {
-		return 0
-	}
-
-	return len(b.node.sums)
+func (b *Bmt[T]) Len() int {
+	return len(b.sums)
 }
 
-func (b *Bmt) Add(file []byte) [32]byte {
-	sum := sha3.Sum256(file)
-	b.root = b.addF(sum)
-	return b.root
+func (b *Bmt[T]) Add(sum T) T {
+	return b.add(sum, false)
 }
 
-var zero [32]byte
-
-func (n *node) add(sum [32]byte, replace bool) (digest [32]byte) {
+func (b *Bmt[T]) add(sum T, replace bool) (digest T) {
 	if replace {
-		n.sums = n.sums[:len(n.sums)-1]
+		b.sums = b.sums[:len(b.sums)-1]
 		replace = false
 	}
 
-	n.sums = append(n.sums, sum)
+	b.sums = append(b.sums, sum)
 
-	if len(n.sums) == 1 {
-		return n.sums[0]
+	if len(b.sums) == 1 {
+		return b.sums[0]
 	}
 
-	var left, right [32]byte
+	var left, right T
 
-	length := len(n.sums)
+	length := len(b.sums)
 
 	if length%2 == 0 {
-		left = n.sums[length-2]
-		right = n.sums[length-1]
+		left = b.sums[length-2]
+		right = b.sums[length-1]
 		replace = true
 	} else {
-		left = n.sums[length-1]
+		left = b.sums[length-1]
+		var zero T
 		right = zero
 	}
 
-	combined := sha3.Sum256(append(left[:], right[:]...))
+	combined := b.comb(left, right)
 
-	if n.next == nil {
-		n.next = new(node)
+	if b.next == nil {
+		b.next = &Bmt[T]{comb: b.comb}
 		replace = false
 	}
 
-	return n.next.add(combined, replace)
+	return b.next.add(combined, replace)
 }
 
-type Proof struct {
+type Proof[T any] struct {
 	Left bool
-	Sum  [32]byte
+	Sum  T
 }
 
-func (b *Bmt) Proof(i int) []Proof {
-	return b.node.proof(i, nil)
+func (b *Bmt[T]) Proof(i int) []Proof[T] {
+	return b.proof(i, nil)
 }
 
-func (n *node) proof(index int, acc []Proof) []Proof {
+func (b *Bmt[T]) proof(index int, acc []Proof[T]) []Proof[T] {
 	var (
 		proofIndex int
 		left       bool
@@ -116,19 +93,20 @@ func (n *node) proof(index int, acc []Proof) []Proof {
 		proofIndex = index - 1
 	}
 
-	if proofIndex < len(n.sums) {
-		acc = append(acc, Proof{
-			Sum:  n.sums[proofIndex],
+	if proofIndex < len(b.sums) {
+		acc = append(acc, Proof[T]{
+			Sum:  b.sums[proofIndex],
 			Left: left,
 		})
 	} else {
-		acc = append(acc, Proof{
+		var zero T
+		acc = append(acc, Proof[T]{
 			Sum:  zero,
 			Left: left,
 		})
 	}
 
-	if n.isLast() {
+	if b.isLast() {
 		return acc
 	}
 
@@ -138,9 +116,9 @@ func (n *node) proof(index int, acc []Proof) []Proof {
 
 	index /= 2
 
-	return n.next.proof(index, acc)
+	return b.next.proof(index, acc)
 }
 
-func (n *node) isLast() bool {
-	return n.next != nil && n.next.next == nil
+func (b *Bmt[T]) isLast() bool {
+	return b.next != nil && b.next.next == nil
 }
