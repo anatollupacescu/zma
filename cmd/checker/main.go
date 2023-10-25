@@ -12,19 +12,19 @@ import (
 )
 
 type proof struct {
-	Left bool   `json:"left"`
-	Sum  string `json:"sum"`
+	Sum string `json:"sum"`
 }
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("usage: checker -root $YOUR_ROOT_HASH -proofs $PROOFS_ARRAY filename.png")
+		log.Fatal("usage: checker -root $YOUR_ROOT_HASH -proofs $PROOFS_ARRAY -index $INDEX filename.png")
 	}
 
-	filename := os.Args[5]
+	filename := os.Args[7]
 
 	rootSum := flag.String("root", "", "root hash sum")
 	proofs := flag.String("proofs", "[]", "the set of proof sums")
+	index := flag.Int("index", 0, "index of the file")
 	flag.Parse()
 
 	if *rootSum == "" {
@@ -60,10 +60,22 @@ func main() {
 			log.Fatal("decode sum", err)
 		}
 
-		if proof.Left {
+		var left bool
+		switch *index {
+		case 0:
+			left = true
+		case 1:
+		default:
+			if *index%2 == 0 {
+				left = true
+			}
+		}
+
+		if left {
 			sumToMatch = kbmt.Comb(sumToMatch, proofSum)
 			continue
 		}
+
 		sumToMatch = kbmt.Comb(proofSum, sumToMatch)
 	}
 

@@ -30,6 +30,14 @@ func (b *Bmt[T]) Add(sum T) T {
 	return b.add(sum, false)
 }
 
+func (b *Bmt[T]) Size() int {
+	if b.next == nil {
+		return 1
+	}
+
+	return len(b.sums) + b.next.Size()
+}
+
 func (b *Bmt[T]) add(sum T, replace bool) (digest T) {
 	if replace {
 		b.sums = b.sums[:len(b.sums)-1]
@@ -66,16 +74,11 @@ func (b *Bmt[T]) add(sum T, replace bool) (digest T) {
 	return b.next.add(combined, replace)
 }
 
-type Proof[T any] struct {
-	Left bool
-	Sum  T
-}
-
-func (b *Bmt[T]) Proof(i int) []Proof[T] {
+func (b *Bmt[T]) Proof(i int) []T {
 	return b.proof(i, nil)
 }
 
-func (b *Bmt[T]) proof(index int, acc []Proof[T]) []Proof[T] {
+func (b *Bmt[T]) proof(index int, acc []T) []T {
 	var (
 		proofIndex int
 		left       bool
@@ -94,16 +97,10 @@ func (b *Bmt[T]) proof(index int, acc []Proof[T]) []Proof[T] {
 	}
 
 	if proofIndex < len(b.sums) {
-		acc = append(acc, Proof[T]{
-			Sum:  b.sums[proofIndex],
-			Left: left,
-		})
+		acc = append(acc, b.sums[proofIndex])
 	} else {
 		var zero T
-		acc = append(acc, Proof[T]{
-			Sum:  zero,
-			Left: left,
-		})
+		acc = append(acc, zero)
 	}
 
 	if b.isLast() {

@@ -18,8 +18,7 @@ type app struct {
 }
 
 type proof struct {
-	Left bool   `json:"left"`
-	Sum  string `json:"sum"`
+	Sum string `json:"sum"`
 }
 
 func (a *app) proof(c echo.Context) error {
@@ -48,8 +47,7 @@ func (a *app) proof(c echo.Context) error {
 	var proofs []proof
 	for _, v := range cbmt.Proof(i) {
 		proofs = append(proofs, proof{
-			Left: v.Left,
-			Sum:  hex.EncodeToString(v.Sum),
+			Sum: hex.EncodeToString(v),
 		})
 	}
 

@@ -45,10 +45,10 @@ Now you can proceed to verify file contents integrity:
 curl -XGET -s localhost:8080/proof/cats/2 > proof.json
 ```
 
-2. Validate file integrity aginst your root checksum and downloaded contents:
+2. Validate file integrity aginst your root checksum, downloaded contents and file index:
 
 ```sh
-go run $(pwd)/cmd/checker -root $YOUR_ROOT_HASH -proofs $(<proof.json) my.cat
+go run $(pwd)/cmd/checker -root $YOUR_ROOT_HASH -proofs $(<proof.json) -index 2 my.cat
 ```
 
 Checksums should match for this file but should not match for any other.

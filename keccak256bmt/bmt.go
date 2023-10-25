@@ -11,7 +11,7 @@ func NewKeccak256Bmt() *bmt.Bmt[[]byte] {
 }
 
 func Comb(l, r []byte) []byte {
-	return []byte(crypto.Keccak256(append(l, r...)))
+	return Sum(append(l, r...))
 }
 
 func Sum(file []byte) []byte {

@@ -20,6 +20,10 @@ func TestProof(t *testing.T) {
 		if len(proofs) != 1 {
 			t.Fatal("expected one proof")
 		}
+
+		if bmt.Size() != 3 {
+			t.Fatal("want size 3")
+		}
 	})
 
 	t.Run("three files, proofs contain zero hash", func(t *testing.T) {
@@ -33,7 +37,7 @@ func TestProof(t *testing.T) {
 			t.Fatal("expected one proof")
 		}
 
-		if proofs[0].Sum != "" {
+		if proofs[0] != "" {
 			t.Fatal("expected zero hash")
 		}
 	})
@@ -50,11 +54,11 @@ func TestProof(t *testing.T) {
 			t.Fatal("expected one proof")
 		}
 
-		if proofs[0].Sum != "b" {
+		if proofs[0] != "b" {
 			t.Fatal("expected b")
 		}
 
-		if proofs[1].Sum != "cd" {
+		if proofs[1] != "cd" {
 			t.Fatal("expected cd")
 		}
 	})
@@ -105,6 +109,10 @@ func TestAdd(t *testing.T) {
 
 		if bmt.next.next.sums[0] != "abcd" {
 			t.Fatalf("wrong root hash: %s", bmt.next.next.sums[0])
+		}
+
+		if bmt.Size() != 7 {
+			t.Fatalf("want size 7, got %d", bmt.Size())
 		}
 	})
 }
